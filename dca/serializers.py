@@ -17,15 +17,13 @@ class DcaSerializer(serializers.Serializer):
 
 
 class DcaRequestSerializer(serializers.Serializer):
-    #mode, amount, frequency, years, ticker
+
+    FREQUENCY_CHOICES = ['d', 'w', 'b', 'm']
+
     mode = serializers.CharField(max_length=12)
     amount = serializers.IntegerField(min_value=1)
-    frequency = serializers.CharField(max_length=1)
+    frequency = serializers.ChoiceField(choices=FREQUENCY_CHOICES)
     years = serializers.IntegerField(min_value=1, max_value=7)
-    ticker = serializers.CharField(max_length=5)
+    ticker = serializers.CharField(max_length=8)
 
-    #def validate(self, attrs):
-    #    frequency = attrs.get['frequency']
-    #    if frequency.casefold() not in ['d','w','b','m']:
-    #        raise serializers.ValidationError('Frequency must be d, w, b or m')
-    #    return attrs
+    
