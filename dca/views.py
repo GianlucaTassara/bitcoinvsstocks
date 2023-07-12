@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .utils import update_current_price, update_price_history, calculate_savings
+from .constants import BTC_TICKER
 import datetime
 
 
@@ -18,20 +19,20 @@ def get_DCA_data(request):
     if not DcaRequest.is_valid():
         return Response(DcaRequest.errors, status.HTTP_400_BAD_REQUEST)
 
-    bitcoin_price = update_current_price('BTC-USD')
+    bitcoin_price = update_current_price(BTC_TICKER)
     stock_price = update_current_price(DcaRequest.data['ticker'])
-    bitcoin_history = update_price_history('BTC-USD')
+    bitcoin_history = update_price_history(BTC_TICKER)
     stock_history = update_price_history(DcaRequest.data['ticker'])
 
     if DcaRequest.data['mode'].casefold() == 'simple':            
-        bitcoin_savings = SavingsSerializer(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], DcaRequest.data['years'], bitcoin_history, bitcoin_price, 'BTC-USD'))
+        bitcoin_savings = SavingsSerializer(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], DcaRequest.data['years'], bitcoin_history, bitcoin_price, BTC_TICKER))
         stock_savings = SavingsSerializer(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], DcaRequest.data['years'], stock_history, stock_price, DcaRequest.data['ticker']))
 
     elif DcaRequest.data['mode'].casefold() == 'table':
         bitcoin_savings = []
         stock_savings = []
         for n in range(1,DcaRequest.data['years']+1):
-            bitcoin_savings.append(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], n, bitcoin_history, bitcoin_price, 'BTC-USD'))
+            bitcoin_savings.append(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], n, bitcoin_history, bitcoin_price, BTC_TICKER))
             stock_savings.append(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], n, stock_history, stock_price, DcaRequest.data['ticker']))
         bitcoin_savings = SavingsSerializer(bitcoin_savings, many=True)
         stock_savings = SavingsSerializer(stock_savings, many=True)

@@ -1,11 +1,9 @@
-import sys
-import requests
-import json
-from datetime import timedelta
 import yfinance as yf
+from datetime import timedelta
 from .models import CurrentPrice, PriceHistory, HistoryLastUpdated
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.utils import timezone
+from .constants import BTC_TICKER
 
 
 
@@ -140,7 +138,7 @@ def calculate_savings(frequency, amount, years, history, current_price, ticker):
 
     """
 
-    if ticker.casefold() in ('btc-usd', 'btc'):
+    if ticker.casefold() == BTC_TICKER.casefold():
         match frequency:
             case "d": days = 1
             case "w": days = 7
@@ -163,7 +161,7 @@ def calculate_savings(frequency, amount, years, history, current_price, ticker):
         counter += 1
     result = savings * current_price
     profit = (result / (amount * counter) - 1) * 100
-    btc_amount = savings if ticker.casefold() == 'btc-usd' else None
+    btc_amount = savings if ticker.casefold() == BTC_TICKER.casefold() else None
     return Savings(ticker, amount * counter, years, int(result), profit, btc_amount)
 
 
