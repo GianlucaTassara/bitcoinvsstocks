@@ -19,23 +19,28 @@ def get_DCA_data(request):
     if not DcaRequest.is_valid():
         return Response(DcaRequest.errors, status.HTTP_400_BAD_REQUEST)
 
-    bitcoin_price = update_current_price(BTC_TICKER)
-    stock_price = update_current_price(DcaRequest.data['ticker'])
-    bitcoin_history = update_price_history(BTC_TICKER)
-    stock_history = update_price_history(DcaRequest.data['ticker'])
+    try:
 
-    if DcaRequest.data['mode'].casefold() == 'simple':            
-        bitcoin_savings = SavingsSerializer(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], DcaRequest.data['years'], bitcoin_history, bitcoin_price, BTC_TICKER))
-        stock_savings = SavingsSerializer(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], DcaRequest.data['years'], stock_history, stock_price, DcaRequest.data['ticker']))
+        bitcoin_price = update_current_price(BTC_TICKER)
+        stock_price = update_current_price(DcaRequest.data['ticker'])
+        bitcoin_history = update_price_history(BTC_TICKER)
+        stock_history = update_price_history(DcaRequest.data['ticker'])
 
-    elif DcaRequest.data['mode'].casefold() == 'table':
-        bitcoin_savings = []
-        stock_savings = []
-        for n in range(1,DcaRequest.data['years']+1):
-            bitcoin_savings.append(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], n, bitcoin_history, bitcoin_price, BTC_TICKER))
-            stock_savings.append(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], n, stock_history, stock_price, DcaRequest.data['ticker']))
-        bitcoin_savings = SavingsSerializer(bitcoin_savings, many=True)
-        stock_savings = SavingsSerializer(stock_savings, many=True)
+        if DcaRequest.data['mode'].casefold() == 'simple':            
+            bitcoin_savings = SavingsSerializer(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], DcaRequest.data['years'], bitcoin_history, bitcoin_price, BTC_TICKER))
+            stock_savings = SavingsSerializer(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], DcaRequest.data['years'], stock_history, stock_price, DcaRequest.data['ticker']))
+
+        elif DcaRequest.data['mode'].casefold() == 'table':
+            bitcoin_savings = []
+            stock_savings = []
+            for n in range(1,DcaRequest.data['years']+1):
+                bitcoin_savings.append(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], n, bitcoin_history, bitcoin_price, BTC_TICKER))
+                stock_savings.append(calculate_savings(DcaRequest.data['frequency'], DcaRequest.data['amount'], n, stock_history, stock_price, DcaRequest.data['ticker']))
+            bitcoin_savings = SavingsSerializer(bitcoin_savings, many=True)
+            stock_savings = SavingsSerializer(stock_savings, many=True)
+            
+    except Exception as e:
+        return Response({'error': str(e)}, status.HTTP_400_BAD_REQUEST)
 
     return JsonResponse({"Bitcoin": bitcoin_savings.data, "Stocks": stock_savings.data})
     

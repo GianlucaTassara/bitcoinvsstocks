@@ -56,7 +56,9 @@ def get_price_from_yahoo(ticker):
     :returns: Current price.
     """
     fdata = yf.Ticker(ticker)
-    today = fdata.history(period='1d', interval='1m')
+    today = fdata.history(period='1d', interval='1m', raise_errors=True)
+    if (today.empty):
+        raise Exception(f"Unable to extract price for {ticker} ticker")
     return float(today['Close'][-1])
 
 
