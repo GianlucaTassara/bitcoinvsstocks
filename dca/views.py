@@ -40,7 +40,7 @@ def get_DCA_data(request):
             stock_savings = SavingsSerializer(stock_savings, many=True)
             
     except Exception as e:
-        return Response({'error': str(e)}, status.HTTP_400_BAD_REQUEST)
+        return Response({'error': str(e)}, status.HTTP_501_NOT_IMPLEMENTED)
 
     return JsonResponse({"Bitcoin": bitcoin_savings.data, "Stocks": stock_savings.data})
     
