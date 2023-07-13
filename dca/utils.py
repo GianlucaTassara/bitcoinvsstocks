@@ -156,6 +156,10 @@ def calculate_savings(frequency, amount, years, history, current_price, ticker):
             case "b": days = 10
             case "m": days = 21
         timespan = 260 * years
+
+    if timespan > len(history):
+        raise Exception(f"Price history for {ticker} ticker doesn't go far back enough")
+
     savings = 0
     counter = 0
     timespan -= days
