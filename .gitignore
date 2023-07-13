@@ -1,0 +1,4 @@
+dca/__pycache__/
+bitcoinvsstocks/__pycache__/
+db.sqlite3
+.venv/
