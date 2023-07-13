@@ -56,7 +56,7 @@ def get_price_from_yahoo(ticker):
     :returns: Current price.
     """
     fdata = yf.Ticker(ticker)
-    today = fdata.history(period='1d', interval='1m', raise_errors=True)
+    today = fdata.history(period='1d', interval='1m')
     if (today.empty):
         raise Exception(f"Unable to extract price for {ticker} ticker")
     return float(today['Close'][-1])
@@ -75,7 +75,7 @@ def update_price_history(ticker):
 
     update, *_ = HistoryLastUpdated.objects.get_or_create(ticker=ticker,defaults={"update_count" : 0})
     if update.last_updated != timezone.now().date():
-        history = get_history_from_yahoo(ticker, None, update.last_updated, timezone.now().date())
+        history = get_history_from_yahoo(ticker, None, update.last_updated)
         update_history_db(ticker, history)
     elif update.update_count == 0:
         history = get_history_from_yahoo(ticker, "10y")
@@ -118,7 +118,7 @@ def get_history_from_yahoo(ticker, period, start=None, end=None):
     :returns: Dict with dates and price for those dates
     """
     fdata = yf.Ticker(ticker)
-    history = fdata.history(period)
+    history = fdata.history(period=period, start=start)
     if (history.empty):
         raise Exception(f"Unable to extract price history for {ticker} ticker")
     results = {key.date(): value for key, value in history['Close'].to_dict().items()}
@@ -148,24 +148,28 @@ def calculate_savings(frequency, amount, years, history, current_price, ticker):
             case "w": days = 7
             case "b": days = 14
             case "m": days = 30
-        timespan = 364 * years
     else:        
         match frequency:
             case "d": days = 1
             case "w": days = 5
             case "b": days = 10
             case "m": days = 21
-        timespan = 260 * years
 
-    if timespan > len(history):
+    match frequency:
+        case "d": iterations = 364 * years
+        case "w": iterations = 52 * years
+        case "b": iterations = 26 * years
+        case "m": iterations = 12 * years
+
+    if (iterations * days) > len(history):
         raise Exception(f"Price history for {ticker} ticker doesn't go far back enough")
 
     savings = 0
     counter = 0
-    timespan -= days
-    while timespan > 0:
-        savings += (amount / history[-timespan])
-        timespan -= days
+    dca_pointer = days
+    while counter < iterations:
+        savings += (amount / history[-dca_pointer])
+        dca_pointer += days
         counter += 1
     result = savings * current_price
     profit = (result / (amount * counter) - 1) * 100
