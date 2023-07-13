@@ -119,6 +119,8 @@ def get_history_from_yahoo(ticker, period, start=None, end=None):
     """
     fdata = yf.Ticker(ticker)
     history = fdata.history(period)
+    if (history.empty):
+        raise Exception(f"Unable to extract price history for {ticker} ticker")
     results = {key.date(): value for key, value in history['Close'].to_dict().items()}
     return results
     
