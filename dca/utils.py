@@ -56,7 +56,7 @@ def get_price_from_yahoo(ticker):
     :returns: Current price.
     """
     fdata = yf.Ticker(ticker)
-    today = fdata.history(period='1d', interval='1m')
+    today = fdata.history(period='1d', interval='15m')
     if (today.empty):
         raise Exception(f"Unable to extract price for {ticker} ticker")
     return float(today['Close'][-1])
@@ -117,8 +117,12 @@ def get_history_from_yahoo(ticker, period, start=None, end=None):
     :param end: If period is None, specifiy end date
     :returns: Dict with dates and price for those dates
     """
+
     fdata = yf.Ticker(ticker)
-    history = fdata.history(period=period, start=start)
+
+    # Always fetch 10 year history for now, as it seems there is 
+    # a bug with fetching specific periods.
+    history = fdata.history(period="10y")
     if (history.empty):
         raise Exception(f"Unable to extract price history for {ticker} ticker")
     results = {key.date(): value for key, value in history['Close'].to_dict().items()}
