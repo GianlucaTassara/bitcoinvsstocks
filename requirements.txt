@@ -7,11 +7,13 @@ Django==4.2.3
 django-cors-headers==4.2.0
 djangorestframework==3.14.0
 frozendict==2.3.8
+gunicorn==21.2.0
 html5lib==1.1
 idna==3.4
 lxml==4.9.2
 multitasking==0.0.11
 numpy==1.25.0
+packaging==23.2
 pandas==2.0.3
 python-dateutil==2.8.2
 pytz==2023.3

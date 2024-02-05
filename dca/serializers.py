@@ -23,7 +23,7 @@ class DcaRequestSerializer(serializers.Serializer):
     mode = serializers.CharField(max_length=12)
     amount = serializers.IntegerField(min_value=1)
     frequency = serializers.ChoiceField(choices=FREQUENCY_CHOICES)
-    years = serializers.IntegerField(min_value=1, max_value=7)
+    years = serializers.IntegerField(min_value=1, max_value=10)
     ticker = serializers.CharField(max_length=8)
 
     
