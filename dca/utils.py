@@ -56,11 +56,22 @@ def get_price_from_yahoo(ticker):
     :returns: Current price.
     """
     fdata = yf.Ticker(ticker)
-    today = fdata.history(period='1d', interval='15m')
-    if (today.empty):
-        raise Exception(f"Unable to extract price for {ticker} ticker")
-    return float(today['Close'][-1])
 
+    try:
+        currentPrice = float(fdata.info['currentPrice'])
+    except Exception as e:
+        print(f"Retrieving current price failed: {e}. Attempting historical data...")
+        try:
+            today = fdata.history(period='1d', interval='15m', raise_errors=True)            
+        except Exception as e:
+            print(f"Retrieving 1 day period historical data failed: {e}. Attempting 5 day period...")
+            today = fdata.history(period='5d', interval='15m', raise_errors=True)
+        if (today.empty):
+            raise Exception(f"Unable to extract price for {ticker} ticker")
+        currentPrice = float(today['Close'][-1])
+        
+    print(f"Current price of {ticker}: {currentPrice}")
+    return currentPrice
 
 def update_price_history(ticker):
     """
