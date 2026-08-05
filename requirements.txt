@@ -4,7 +4,7 @@ beautifulsoup4==4.12.2
 certifi==2025.11.12
 cffi==2.0.0
 charset-normalizer==3.1.0
-curl_cffi==0.13.0
+curl_cffi==0.16.0
 Django==4.2.3
 django-cors-headers==4.2.0
 djangorestframework==3.14.0
@@ -32,4 +32,4 @@ tzdata==2023.3
 urllib3==2.0.3
 webencodings==0.5.1
 websockets==15.0.1
-yfinance==0.2.66
+yfinance==1.5.2
