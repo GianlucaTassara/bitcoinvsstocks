@@ -70,7 +70,7 @@ requires-dist = [
     { name = "django-cors-headers", specifier = ">=4.7" },
     { name = "django-environ", specifier = ">=0.12" },
     { name = "djangorestframework", specifier = ">=3.16" },
-    { name = "drf-spectacular", extras = ["sidecar"], specifier = ">=0.28" },
+    { name = "drf-spectacular", extras = ["sidecar"], specifier = ">=0.30.0" },
     { name = "gunicorn", specifier = ">=23" },
     { name = "pandas", specifier = ">=2.2" },
     { name = "whitenoise", specifier = ">=6.9" },
