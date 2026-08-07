@@ -1,10 +1,22 @@
-import yfinance as yf
+import logging
 from datetime import timedelta
-from .models import CurrentPrice, PriceHistory, HistoryLastUpdated
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-from django.utils import timezone
-from .constants import BTC_TICKER
 
+import yfinance as yf
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
+
+from .constants import BTC_TICKER
+from .models import CurrentPrice, HistoryLastUpdated, PriceHistory
+
+logger = logging.getLogger(__name__)
+
+
+class UpstreamDataError(Exception):
+    """Yahoo Finance returned no usable data (unknown ticker or outage)."""
+
+
+class InsufficientHistoryError(Exception):
+    """The available price history is too short for the requested DCA span."""
 
 
 class Savings():
@@ -60,17 +72,20 @@ def get_price_from_yahoo(ticker):
     try:
         currentPrice = float(fdata.info['currentPrice'])
     except Exception as e:
-        print(f"Retrieving current price failed: {e}. Attempting historical data...")
+        logger.info("Retrieving current price for %s failed: %s. Attempting historical data...", ticker, e)
         try:
-            today = fdata.history(period='1d', interval='15m', raise_errors=True)            
+            today = fdata.history(period='1d', interval='15m', raise_errors=True)
         except Exception as e:
-            print(f"Retrieving 1 day period historical data failed: {e}. Attempting 5 day period...")
-            today = fdata.history(period='5d', interval='15m', raise_errors=True)
-        if (today.empty):
-            raise Exception(f"Unable to extract price for {ticker} ticker")
+            logger.info("Retrieving 1 day history for %s failed: %s. Attempting 5 day period...", ticker, e)
+            try:
+                today = fdata.history(period='5d', interval='15m', raise_errors=True)
+            except Exception as e:
+                raise UpstreamDataError(f"Unable to extract price for {ticker} ticker") from e
+        if today.empty:
+            raise UpstreamDataError(f"Unable to extract price for {ticker} ticker")
         currentPrice = float(today['Close'].iloc[-1])
-        
-    print(f"Current price of {ticker}: {currentPrice}")
+
+    logger.info("Current price of %s: %s", ticker, currentPrice)
     return currentPrice
 
 def update_price_history(ticker):
@@ -84,13 +99,11 @@ def update_price_history(ticker):
     :returns: Price history, extracted from database.
     """
 
-    update, *_ = HistoryLastUpdated.objects.get_or_create(ticker=ticker,defaults={"update_count" : 0})
-    if update.last_updated != timezone.now().date():
-        history = get_history_from_yahoo(ticker, None, update.last_updated)
-        update_history_db(ticker, history)
-    elif update.update_count == 0:
-        history = get_history_from_yahoo(ticker, "10y")
-        update_history_db(ticker, history)
+    update, *_ = HistoryLastUpdated.objects.get_or_create(ticker=ticker, defaults={"update_count": 0})
+    # last_updated is auto_now, so a freshly created row already reads "today";
+    # update_count == 0 distinguishes brand-new tickers that still need a fetch.
+    if update.last_updated != timezone.now().date() or update.update_count == 0:
+        update_history_db(ticker, get_history_from_yahoo(ticker))
     update.update_count += 1
     update.save()
     return get_history_from_db(ticker)
@@ -118,27 +131,23 @@ def get_history_from_db(ticker):
     return [float(price) for price in prices_queryset]
 
 
-def get_history_from_yahoo(ticker, period, start=None, end=None):
+def get_history_from_yahoo(ticker):
     """
     Gets price history from Yahoo's API.
 
     :param ticker: Ticker representing bitcoin or a specific stock.
-    :param period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
-    :param start: If period is None, specify start date
-    :param end: If period is None, specifiy end date
     :returns: Dict with dates and price for those dates
     """
 
     fdata = yf.Ticker(ticker)
 
-    # Always fetch 10 year history for now, as it seems there is 
+    # Always fetch 10 year history, as it seems there is
     # a bug with fetching specific periods.
     history = fdata.history(period="10y")
-    if (history.empty):
-        raise Exception(f"Unable to extract price history for {ticker} ticker")
-    results = {key.date(): value for key, value in history['Close'].to_dict().items()}
-    return results
-    
+    if history.empty:
+        raise UpstreamDataError(f"Unable to extract price history for {ticker} ticker")
+    return {key.date(): value for key, value in history['Close'].to_dict().items()}
+
 
 def calculate_savings(frequency, amount, years, history, current_price, ticker):
     """
@@ -177,7 +186,7 @@ def calculate_savings(frequency, amount, years, history, current_price, ticker):
         case "m": iterations = 12 * years
 
     if (iterations * days) > len(history):
-        raise Exception(f"Price history for {ticker} ticker doesn't go far back enough")
+        raise InsufficientHistoryError(f"Price history for {ticker} ticker doesn't go far back enough")
 
     savings = 0
     counter = 0
