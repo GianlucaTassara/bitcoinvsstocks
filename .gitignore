@@ -1,4 +1,20 @@
-dca/__pycache__/
-bitcoinvsstocks/__pycache__/
-db.sqlite3
+# Python
+__pycache__/
+*.pyc
 .venv/
+.pytest_cache/
+.ruff_cache/
+
+# Django
+db.sqlite3
+staticfiles/
+
+# Environment
+.env
+
+# Local ticker-list generation (frontend data, not part of the API)
+all_stocks.js
+allstocks.csv
+popular_stocks.js
+popularstocks.csv
+tickers.py
