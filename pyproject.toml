@@ -1,0 +1,36 @@
+[project]
+name = "bitcoinvsstocks"
+version = "1.0.0"
+description = "REST API comparing dollar-cost averaging into Bitcoin vs stocks"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.2,<5.3",
+    "djangorestframework>=3.16",
+    "django-cors-headers>=4.7",
+    "drf-spectacular[sidecar]>=0.28",
+    "django-environ>=0.12",
+    "whitenoise>=6.9",
+    "gunicorn>=23",
+    "yfinance>=1.5.2",
+    "pandas>=2.2",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "pytest>=8",
+    "pytest-django>=4.9",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "bitcoinvsstocks.settings"
+python_files = ["test_*.py"]

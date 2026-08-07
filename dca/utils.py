@@ -68,7 +68,7 @@ def get_price_from_yahoo(ticker):
             today = fdata.history(period='5d', interval='15m', raise_errors=True)
         if (today.empty):
             raise Exception(f"Unable to extract price for {ticker} ticker")
-        currentPrice = float(today['Close'][-1])
+        currentPrice = float(today['Close'].iloc[-1])
         
     print(f"Current price of {ticker}: {currentPrice}")
     return currentPrice
