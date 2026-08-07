@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 import pytest
 from django.utils import timezone
@@ -103,3 +103,18 @@ class TestPriceHistoryCache:
         # update_count=1, so no fetch happens (no_network would fail it).
         seed_prices("AAPL", days=5)
         assert update_price_history("AAPL") == [100.0] * 5
+
+    def test_refresh_overwrites_cached_rows(self, db, fake_yahoo):
+        # Yahoo back-adjusts history after splits/dividends, so a refresh
+        # must rewrite existing rows, not just insert new dates. Seed rows
+        # on a pre-split basis (10x) for the same dates the fetch returns.
+        for offset, stale_price in enumerate([100.0, 110.0, 120.0]):
+            PriceHistory.objects.create(
+                ticker="AAPL",
+                price=stale_price,
+                currency="USD",
+                date=date(2026, 1, 28) + timedelta(days=offset),
+            )
+        fake_yahoo(close_prices=[10.0, 11.0, 12.0])
+        assert update_price_history("AAPL") == [10.0, 11.0, 12.0]
+        assert PriceHistory.objects.filter(ticker="AAPL").count() == 3

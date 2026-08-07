@@ -123,6 +123,14 @@ def update_history_db(ticker, history):
     """
     Updates price history on database.
 
+    Upserts every row rather than only inserting new dates: Yahoo serves
+    back-adjusted prices, so a split or dividend retroactively changes
+    the price of every earlier date. Keeping old rows as-is would mix
+    two adjustment bases in one series and corrupt DCA results (10x off
+    after a 10:1 split). Rewriting the full series daily keeps all rows
+    on the current basis, and also corrects today's row, which is first
+    stored with an intraday price rather than the final close.
+
     :param ticker: Ticker representing bitcoin or a specific stock.
     :param history: A list of prices already ordered by date.
     """
@@ -130,7 +138,12 @@ def update_history_db(ticker, history):
         PriceHistory(ticker=ticker, price=price, currency="USD", date=date)
         for date, price in history.items()
     ]
-    PriceHistory.objects.bulk_create(prices, ignore_conflicts=True)
+    PriceHistory.objects.bulk_create(
+        prices,
+        update_conflicts=True,
+        unique_fields=["ticker", "date"],
+        update_fields=["price"],
+    )
 
 
 def get_history_from_db(ticker):
@@ -156,9 +169,11 @@ def get_history_from_yahoo(ticker):
 
     fdata = yf.Ticker(ticker)
 
-    # Always fetch 10 year history, as it seems there is
-    # a bug with fetching specific periods.
-    history = fdata.history(period="10y")
+    # Fetch all available history: exactly 10 years is not enough for a
+    # 10-year DCA at weekly/biweekly frequency, since 52 weeks * 5 rows
+    # overshoots the ~252 real trading days in a year (market holidays).
+    # Also, fetching specific periods (e.g. "10y") seems buggy in yfinance.
+    history = fdata.history(period="max")
     if history.empty:
         raise UpstreamDataError(f"Unable to extract price history for {ticker} ticker")
     return {key.date(): value for key, value in history["Close"].to_dict().items()}
@@ -171,7 +186,12 @@ def calculate_savings(frequency, amount, years, history, current_price, ticker):
     Stocks don't have daily close prices for weekends so calculating
     results is done differently than Bitcoin.
 
-    :param frequency: How often: (w)eekly, (b)iweekly, (m)onthly.
+    Only use daily frequency if you want to check Bitcoin's DCA. Don't
+    use it for comparing with stocks (a "year" of daily purchases spans
+    364 trading days for stocks, roughly 17 months, instead of one
+    calendar year). Use weekly, bi-weekly and monthly for that.
+
+    :param frequency: How often: (d)aily, (w)eekly, (b)iweekly, (m)onthly.
     :param amount: How much.
     :param years: Starting how far back in years.
     :param history: List of prices ordered from oldest to recent.

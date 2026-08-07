@@ -92,9 +92,15 @@ Then try:
 curl 'http://localhost:8000/?mode=simple&amount=100&frequency=w&years=2&ticker=AAPL'
 ```
 
-The first request for a ticker fetches ~10 years of history from Yahoo Finance and
+The first request for a ticker fetches all available history from Yahoo Finance and
 caches it in SQLite; subsequent requests are fast. Spot prices are cached for
 15 minutes, history is refreshed daily.
+
+The daily refresh rewrites the ticker's entire cached series, not just new dates.
+This matters because Yahoo serves back-adjusted prices: a stock split or dividend
+retroactively changes every historical price, so cached rows must be updated to
+stay on the same adjustment basis as recent data. Prices are dividend-adjusted
+(total return), which keeps the comparison with Bitcoin fair.
 
 ## Running tests
 
