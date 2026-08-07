@@ -19,7 +19,7 @@ class InsufficientHistoryError(Exception):
     """The available price history is too short for the requested DCA span."""
 
 
-class Savings():
+class Savings:
     """
     Represents the results of a particular DCA strategy.
     """
@@ -33,7 +33,10 @@ class Savings():
         self.btc_amount = btc_amount
 
     def __str__(self):
-        return f"Ticker: {self.ticker} Invested: {self.invested} Savings: {self.savings} Profit: {self.profit} Btc: {self.btc_amount}"
+        return (
+            f"Ticker: {self.ticker} Invested: {self.invested} "
+            f"Savings: {self.savings} Profit: {self.profit} Btc: {self.btc_amount}"
+        )
 
 
 def update_current_price(ticker):
@@ -70,36 +73,43 @@ def get_price_from_yahoo(ticker):
     fdata = yf.Ticker(ticker)
 
     try:
-        currentPrice = float(fdata.info['currentPrice'])
+        currentPrice = float(fdata.info["currentPrice"])
     except Exception as e:
-        logger.info("Retrieving current price for %s failed: %s. Attempting historical data...", ticker, e)
+        logger.info(
+            "Retrieving current price for %s failed: %s. Attempting historical data...", ticker, e
+        )
         try:
-            today = fdata.history(period='1d', interval='15m', raise_errors=True)
+            today = fdata.history(period="1d", interval="15m", raise_errors=True)
         except Exception as e:
-            logger.info("Retrieving 1 day history for %s failed: %s. Attempting 5 day period...", ticker, e)
+            logger.info(
+                "Retrieving 1 day history for %s failed: %s. Attempting 5 day period...", ticker, e
+            )
             try:
-                today = fdata.history(period='5d', interval='15m', raise_errors=True)
+                today = fdata.history(period="5d", interval="15m", raise_errors=True)
             except Exception as e:
                 raise UpstreamDataError(f"Unable to extract price for {ticker} ticker") from e
         if today.empty:
-            raise UpstreamDataError(f"Unable to extract price for {ticker} ticker")
-        currentPrice = float(today['Close'].iloc[-1])
+            raise UpstreamDataError(f"Unable to extract price for {ticker} ticker") from None
+        currentPrice = float(today["Close"].iloc[-1])
 
     logger.info("Current price of %s: %s", ticker, currentPrice)
     return currentPrice
+
 
 def update_price_history(ticker):
     """
     Updates price history on database.
 
-    If it doesn't exist or hasn't been updated today, 
+    If it doesn't exist or hasn't been updated today,
     then get price history from Yahoo and update database.
 
     :param ticker: Ticker representing bitcoin or a specific stock.
     :returns: Price history, extracted from database.
     """
 
-    update, *_ = HistoryLastUpdated.objects.get_or_create(ticker=ticker, defaults={"update_count": 0})
+    update, *_ = HistoryLastUpdated.objects.get_or_create(
+        ticker=ticker, defaults={"update_count": 0}
+    )
     # last_updated is auto_now, so a freshly created row already reads "today";
     # update_count == 0 distinguishes brand-new tickers that still need a fetch.
     if update.last_updated != timezone.now().date() or update.update_count == 0:
@@ -116,7 +126,10 @@ def update_history_db(ticker, history):
     :param ticker: Ticker representing bitcoin or a specific stock.
     :param history: A list of prices already ordered by date.
     """
-    prices = [PriceHistory(ticker=ticker, price=price, currency='USD', date=date) for date, price in history.items()]
+    prices = [
+        PriceHistory(ticker=ticker, price=price, currency="USD", date=date)
+        for date, price in history.items()
+    ]
     PriceHistory.objects.bulk_create(prices, ignore_conflicts=True)
 
 
@@ -127,7 +140,9 @@ def get_history_from_db(ticker):
     :param ticker: Ticker representing bitcoin or a specific stock.
     :returns: A list of all daily close prices ordered by date.
     """
-    prices_queryset = PriceHistory.objects.filter(ticker=ticker).order_by('date').values_list('price', flat=True)
+    prices_queryset = (
+        PriceHistory.objects.filter(ticker=ticker).order_by("date").values_list("price", flat=True)
+    )
     return [float(price) for price in prices_queryset]
 
 
@@ -146,7 +161,7 @@ def get_history_from_yahoo(ticker):
     history = fdata.history(period="10y")
     if history.empty:
         raise UpstreamDataError(f"Unable to extract price history for {ticker} ticker")
-    return {key.date(): value for key, value in history['Close'].to_dict().items()}
+    return {key.date(): value for key, value in history["Close"].to_dict().items()}
 
 
 def calculate_savings(frequency, amount, years, history, current_price, ticker):
@@ -168,36 +183,48 @@ def calculate_savings(frequency, amount, years, history, current_price, ticker):
 
     if ticker.casefold() == BTC_TICKER.casefold():
         match frequency:
-            case "d": days = 1
-            case "w": days = 7
-            case "b": days = 14
-            case "m": days = 30
-    else:        
+            case "d":
+                days = 1
+            case "w":
+                days = 7
+            case "b":
+                days = 14
+            case "m":
+                days = 30
+    else:
         match frequency:
-            case "d": days = 1
-            case "w": days = 5
-            case "b": days = 10
-            case "m": days = 21
+            case "d":
+                days = 1
+            case "w":
+                days = 5
+            case "b":
+                days = 10
+            case "m":
+                days = 21
 
     match frequency:
-        case "d": iterations = 364 * years
-        case "w": iterations = 52 * years
-        case "b": iterations = 26 * years
-        case "m": iterations = 12 * years
+        case "d":
+            iterations = 364 * years
+        case "w":
+            iterations = 52 * years
+        case "b":
+            iterations = 26 * years
+        case "m":
+            iterations = 12 * years
 
     if (iterations * days) > len(history):
-        raise InsufficientHistoryError(f"Price history for {ticker} ticker doesn't go far back enough")
+        raise InsufficientHistoryError(
+            f"Price history for {ticker} ticker doesn't go far back enough"
+        )
 
     savings = 0
     counter = 0
     dca_pointer = days
     while counter < iterations:
-        savings += (amount / history[-dca_pointer])
+        savings += amount / history[-dca_pointer]
         dca_pointer += days
         counter += 1
     result = savings * current_price
     profit = (result / (amount * counter) - 1) * 100
     btc_amount = savings if ticker.casefold() == BTC_TICKER.casefold() else None
     return Savings(ticker, amount * counter, years, int(result), profit, btc_amount)
-
-

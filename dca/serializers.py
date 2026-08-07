@@ -16,8 +16,8 @@ class SavingsSerializer(serializers.Serializer):
 
 
 class DcaRequestSerializer(serializers.Serializer):
-    MODE_CHOICES = ['simple', 'table']
-    FREQUENCY_CHOICES = ['d', 'w', 'b', 'm']
+    MODE_CHOICES = ["simple", "table"]
+    FREQUENCY_CHOICES = ["d", "w", "b", "m"]
 
     mode = CaseInsensitiveChoiceField(choices=MODE_CHOICES)
     amount = serializers.IntegerField(min_value=1)

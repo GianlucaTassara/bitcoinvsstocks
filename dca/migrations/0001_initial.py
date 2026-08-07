@@ -4,44 +4,59 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='CurrentPrice',
+            name="CurrentPrice",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ticker', models.CharField(max_length=12)),
-                ('price', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('last_updated', models.DateTimeField(auto_now=True)),
-                ('update_count', models.PositiveIntegerField(default=0)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("ticker", models.CharField(max_length=12)),
+                ("price", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("last_updated", models.DateTimeField(auto_now=True)),
+                ("update_count", models.PositiveIntegerField(default=0)),
             ],
         ),
         migrations.CreateModel(
-            name='HistoryLastUpdated',
+            name="HistoryLastUpdated",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ticker', models.CharField(max_length=12)),
-                ('last_updated', models.DateField(auto_now=True)),
-                ('update_count', models.PositiveIntegerField(default=0)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("ticker", models.CharField(max_length=12)),
+                ("last_updated", models.DateField(auto_now=True)),
+                ("update_count", models.PositiveIntegerField(default=0)),
             ],
         ),
         migrations.CreateModel(
-            name='PriceHistory',
+            name="PriceHistory",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('ticker', models.CharField(max_length=12)),
-                ('price', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('currency', models.CharField(max_length=3)),
-                ('date', models.DateField()),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("ticker", models.CharField(max_length=12)),
+                ("price", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("currency", models.CharField(max_length=3)),
+                ("date", models.DateField()),
             ],
         ),
         migrations.AddConstraint(
-            model_name='pricehistory',
-            constraint=models.UniqueConstraint(fields=('ticker', 'date'), name='unique_ticker_date'),
+            model_name="pricehistory",
+            constraint=models.UniqueConstraint(
+                fields=("ticker", "date"), name="unique_ticker_date"
+            ),
         ),
     ]

@@ -17,7 +17,7 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
-@api_view(['GET', 'POST'])
+@api_view(["GET", "POST"])
 def get_DCA_data(request):
     serializer = DcaRequestSerializer(data=request.query_params)
     if not serializer.is_valid():
@@ -26,26 +26,28 @@ def get_DCA_data(request):
 
     try:
         results = {}
-        for label, ticker in (('Bitcoin', BTC_TICKER), ('Stocks', params['ticker'])):
+        for label, ticker in (("Bitcoin", BTC_TICKER), ("Stocks", params["ticker"])):
             price = update_current_price(ticker)
             history = update_price_history(ticker)
-            if params['mode'] == 'simple':
+            if params["mode"] == "simple":
                 savings = calculate_savings(
-                    params['frequency'], params['amount'], params['years'], history, price, ticker
+                    params["frequency"], params["amount"], params["years"], history, price, ticker
                 )
                 results[label] = SavingsSerializer(savings).data
             else:  # table: one row per year from 1 to `years`
                 rows = [
-                    calculate_savings(params['frequency'], params['amount'], n, history, price, ticker)
-                    for n in range(1, params['years'] + 1)
+                    calculate_savings(
+                        params["frequency"], params["amount"], n, history, price, ticker
+                    )
+                    for n in range(1, params["years"] + 1)
                 ]
                 results[label] = SavingsSerializer(rows, many=True).data
     except InsufficientHistoryError as e:
-        return Response({'error': str(e)}, status.HTTP_400_BAD_REQUEST)
+        return Response({"error": str(e)}, status.HTTP_400_BAD_REQUEST)
     except UpstreamDataError:
-        logger.exception("Upstream price data fetch failed for ticker %s", params['ticker'])
+        logger.exception("Upstream price data fetch failed for ticker %s", params["ticker"])
         return Response(
-            {'error': 'Unknown ticker or price data temporarily unavailable'},
+            {"error": "Unknown ticker or price data temporarily unavailable"},
             status.HTTP_502_BAD_GATEWAY,
         )
 
