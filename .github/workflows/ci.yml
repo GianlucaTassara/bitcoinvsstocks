@@ -31,5 +31,8 @@ jobs:
       - name: Check for missing migrations
         run: uv run python manage.py makemigrations --check --dry-run
 
+      - name: Collect static files
+        run: uv run python manage.py collectstatic --noinput
+
       - name: Test
         run: uv run pytest

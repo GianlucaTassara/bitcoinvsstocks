@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "dca.apps.DcaConfig",
     "rest_framework",
     "corsheaders",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
 ]
 
 MIDDLEWARE = [
@@ -123,6 +125,21 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Bitcoin vs Stocks API",
+    "DESCRIPTION": (
+        "Compares a dollar-cost-averaging strategy in Bitcoin against the same "
+        "strategy in a stock or index, using Yahoo Finance price data."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    # Serve Swagger UI assets locally via whitenoise instead of a CDN.
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
 }
 
 # Behind Railway's proxy, trust the forwarded protocol header.

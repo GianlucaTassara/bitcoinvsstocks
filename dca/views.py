@@ -1,11 +1,18 @@
 import logging
 
+from django.shortcuts import redirect
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from .constants import BTC_TICKER
-from .serializers import DcaRequestSerializer, SavingsSerializer
+from .serializers import (
+    DcaRequestSerializer,
+    DcaResponseSerializer,
+    ErrorSerializer,
+    SavingsSerializer,
+)
 from .utils import (
     InsufficientHistoryError,
     UpstreamDataError,
@@ -17,8 +24,29 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    parameters=[DcaRequestSerializer],
+    responses={200: DcaResponseSerializer, 400: ErrorSerializer, 502: ErrorSerializer},
+    description=(
+        "Compare a DCA strategy in Bitcoin vs a stock or index. "
+        "With mode=simple each asset maps to one result object; with mode=table "
+        "each asset maps to an array of result objects, one per year from 1 to `years`."
+    ),
+    methods=["GET"],
+)
+@extend_schema(
+    parameters=[DcaRequestSerializer],
+    responses={200: DcaResponseSerializer},
+    deprecated=True,
+    description="Legacy alias of GET; parameters are still read from the query string.",
+    methods=["POST"],
+)
 @api_view(["GET", "POST"])
 def get_DCA_data(request):
+    # A bare browser visit gets the interactive docs instead of a 400.
+    if request.method == "GET" and not request.query_params:
+        return redirect("swagger-ui")
+
     serializer = DcaRequestSerializer(data=request.query_params)
     if not serializer.is_valid():
         return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)

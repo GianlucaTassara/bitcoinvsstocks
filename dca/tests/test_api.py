@@ -80,3 +80,20 @@ def test_post_with_query_params_still_works(client, seeded):
     response = client.post(f"/?{urlencode(VALID)}")
     assert response.status_code == 200
     assert set(response.json()) == {"Bitcoin", "Stocks"}
+
+
+def test_bare_root_redirects_to_docs(client):
+    response = client.get("/")
+    assert response.status_code == 302
+    assert response["Location"] == "/docs/"
+
+
+def test_swagger_ui_served(client):
+    response = client.get("/docs/")
+    assert response.status_code == 200
+
+
+def test_openapi_schema_served(client):
+    response = client.get("/api/schema/")
+    assert response.status_code == 200
+    assert b"Bitcoin vs Stocks API" in response.content

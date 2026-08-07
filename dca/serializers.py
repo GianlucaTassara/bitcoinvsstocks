@@ -15,6 +15,18 @@ class SavingsSerializer(serializers.Serializer):
     past_years = serializers.IntegerField(min_value=1, max_value=10)
 
 
+class DcaResponseSerializer(serializers.Serializer):
+    """Response shape for mode=simple; mode=table returns a list of the same
+    objects per asset, one entry per year."""
+
+    Bitcoin = SavingsSerializer()
+    Stocks = SavingsSerializer()
+
+
+class ErrorSerializer(serializers.Serializer):
+    error = serializers.CharField()
+
+
 class DcaRequestSerializer(serializers.Serializer):
     MODE_CHOICES = ["simple", "table"]
     FREQUENCY_CHOICES = ["d", "w", "b", "m"]
